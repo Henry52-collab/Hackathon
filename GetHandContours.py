@@ -128,7 +128,7 @@ def _get_eucledian_distance(beg, end):#计算两点之间的坐标
     d=math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2))
     return d
 
-def _get_defects_count(array, contour, defects, verbose = False):
+def _get_defects_count(array, contour, defects,frame, verbose = False):
     ndefects=0
     
     for i in range(defects.shape[0]):
@@ -145,9 +145,13 @@ def _get_defects_count(array, contour, defects, verbose = False):
             ndefects = ndefects +1
             
             if verbose:
-                cv2.circle(array, far,3, Color.RED, -1)
+                cv2.circle(frame, far,3,(0,0,255), -1)
+                cv2.imshow('capture',frame)
+                cv2.waitKey(1)
         if verbose:
-            cv2.line(array, beg,end, Color.RED, 1)
+            cv2.line(frame, beg,end, (0,0,255), 1)
+            cv2.imshow('capture',frame)
+            cv2.waitKey(1)
     return array, ndefects
 
 
@@ -165,7 +169,7 @@ def grdetect(array, verbose=False):
     
     if defects is not None:
         
-        copy, ndefects = _get_defects_count(copy, largecont, defects, verbose=verbose)
+        copy, ndefects = _get_defects_count(copy, largecont, defects, copy,verbose=verbose)
         
         if   ndefects == 0:
             myevent.setType(Event.NONE)
@@ -199,6 +203,7 @@ from PIL import Image
 
 
 if __name__=='__main__':
+
     cap = cv2.VideoCapture(0)
     while (cap.isOpened()) and (cv2.waitKey(10) not in [Keycode.ESCAPE, Keycode.Q, Keycode.q]):
         ret, frame = cap.read()
@@ -213,11 +218,13 @@ if __name__=='__main__':
         
         contours= _get_contours(mask)
         
-        if grdetect(frame).type==Event.FOUR:
-            print('444444444444444444444444444444444444')
+        if grdetect(frame, True).type==Event.FOUR:
+            print('Give Me Five')
         
         cv2.drawContours(frame, contours, -1 , (0,255,0),2)
         cv2.imshow('capture',frame)
+    
+    cv2.destroyAllWindows()
     
     
 
