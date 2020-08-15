@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 
 import numpy as np
 import cv2
@@ -15,7 +13,6 @@ import math
 #cv2.destroyAllWindows()
 
 
-# In[2]:
 
 
 import numpy as np
@@ -29,14 +26,13 @@ class Capture(object):
     
     def read(self):
         _,frame = self.capture. read()
-        frame = cv2.bilateralFilter(frame, 5, 50, 100)
+        frame = cv2.bilateralFilter(frame, 9,75, 75)
         image = Image.fromarray(frame)
         return image
     
     
 
 
-# In[3]:
 
 
 def _remove_background(frame):
@@ -47,24 +43,30 @@ def _remove_background(frame):
     kernel = np.ones((3,3),np.uint8)
     fgmask = cv2.erode(fgmask, kernel, iterations=1)
     res= cv2.bitwise_and(frame, frame, mask=fgmask)
-    return res
+    kernel = np.ones((3,3), np.uint8)
+    erosion= cv2.erode(res,kernel)
+    dilation = cv2.dilate(erosion, kernel)
+    return dilation
 
 
-# In[4]:
 
 
 def _bodyskin_detect(frame):
     
-    ycrcb= cv2.cvtColor(frame,cv2.COLOR_BGR2YCrCb)
+    ycrcb= cv2.cvtColor(frame,cv2.COLOR_BGR2YCR_CB)
     (_, cr, _) = cv2.split(ycrcb)
     cr1 = cv2.GaussianBlur(cr,(5,5),0)
-    _, skin = cv2.threshold(cr1, 0, 355, cv2.THRESH_BINARY+cv2.THRESH_BINARY_OTSU)
+    _, skin = cv2.threshold(cr1, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     cv2.imshow("image1",skin)
     
     return skin
 
+def _remove_noise(frame):
+    blur= cv2.blur(frame, (3,3))
+    blur = cv2.bilateralFilter(blur, 9, 1,1)
+    return blur
 
-# In[5]:
+
 
 
 from enum import Enum
@@ -81,11 +83,10 @@ class event(object):
     
 
    
-    
+
     
 
 
-# In[6]:
 
 
 from collections import namedtuple
@@ -97,7 +98,6 @@ Keycode = KeyCode._make([27,81,113])
 
 COLOR = namedtuple('COLOR',['RED','GREEN','BLUE'])
 Color = COLOR._make([(0,0,255),(0,255,0),(255,0,0)])
-# In[7]:
 
 
 import cv2
@@ -152,7 +152,7 @@ def _get_defects_count(array, contour, defects, verbose = False):
 
 
 def grdetect(array, verbose=False):
-    event = Event(Event.NONE)
+    myevent = event(Event.NONE)
     copy = array.copy()
     array= _remove_background(array)
     thresh = _bodyskin_detect(array)
@@ -168,22 +168,18 @@ def grdetect(array, verbose=False):
         copy, ndefects = _get_defects_count(copy, largecont, defects, verbose=verbose)
         
         if   ndefects == 0:
-            event.setType(Event.ZERO)
+            myevent.setType(Event.NONE)
         elif ndefects == 1:
-            event.setType(Event.ONE)
+            myevent.setType(Event.ONE)
         elif ndefects == 2:
-            event.setType(Event.TWO)
+            myevent.setType(Event.TWO)
         elif ndefects == 3:
-            event.setType(Event.THREE)
+            myevent.setType(Event.THREE)
         elif ndefects == 4:
-            event.setType(Event.FOUR)
-        return event
+            myevent.setType(Event.FOUR)
+        return myevent
     
     
-print(Event.NONE)    
-
-
-# In[8]:
 
 
 def HSVBin(img):
@@ -196,8 +192,6 @@ def HSVBin(img):
     return mask
 
 
-# In[9]:
-
 
 import time
 import cv2
@@ -208,26 +202,25 @@ if __name__=='__main__':
     cap = cv2.VideoCapture(0)
     while (cap.isOpened()) and (cv2.waitKey(10) not in [Keycode.ESCAPE, Keycode.Q, Keycode.q]):
         ret, frame = cap.read()
-        print(frame)
-        frame = cv2.bilateralFilter(frame, 5, 50, 100)
+        frame = _remove_noise(frame)
 #        image = Image.fromarray(frame)
-        print(frame)
+
         res= _remove_background(frame)
-        print(res)
+
         mask = HSVBin(res)
-        print(mask)
-        kernel = np.ones((5,5),np.uint8)
-        closed= cv2.morphologyEx(mask, cv2.MORPH_OPEN,kernel)
-        closed= cv2.morphologyEx(mask, cv2.MORPH_CLOSE,kernel)
-        print(closed)
+        
+
+        
         contours= _get_contours(mask)
+        
+        if grdetect(frame).type==Event.FOUR:
+            print('444444444444444444444444444444444444')
+        
         cv2.drawContours(frame, contours, -1 , (0,255,0),2)
         cv2.imshow('capture',frame)
     
     
 
-
-# In[ ]:
 
 
 
