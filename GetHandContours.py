@@ -151,7 +151,8 @@ def _get_defects_count(array, contour, defects,frame, verbose = False):
         if verbose:
             cv2.line(frame, beg,end, (0,0,255), 1)
             cv2.imshow('capture',frame)
-            cv2.waitKey(1)
+            if i%1000==0:
+                cv2.waitKey(1)
     return array, ndefects
 
 
@@ -224,9 +225,11 @@ if __name__=='__main__':
         cv2.drawContours(frame, contours, -1 , (0,255,0),2)
         cv2.imshow('capture',frame)
     
+    cap.release()
     cv2.destroyAllWindows()
     
     
+
 
 
 
